@@ -1,0 +1,14 @@
+{
+  "csv_path": "example_sprints_generated.csv",
+  "total_release_effort": 950,
+  "effort_unit": "person_days",
+  "save_model_path": "model_artifact.json",
+  "history_path": "history/model_history.jsonl",
+  "use_features": ["prev_daily_rate", "unplanned_fraction", "percent_bug"],
+  "future_holiday_dates": [],
+  "output_paths": {
+    "sims_csv": "sims_output_regression.csv",
+    "model_artifact": "model_artifact.json",
+    "selection_csv": "model_selection_results.csv"
+  }
+}
