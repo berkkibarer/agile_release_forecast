@@ -25,8 +25,16 @@ This system provides, **without using story points**, using only **effort-based 
 - `compute_effort_metrics.py` — Utility for computing sprint metrics (throughput, volatility, plannedness, carryover, burnout)
 - `agile_plots.py` — Visualizations (burndown, burnup, throughput trend, burnout chart)
 - `generate_report.py` — HTML report generator (single file, all metrics + charts)
-- `generate_dataset.py` — Synthetic sprint data generator (for testing/demo)
+- `generate_dataset.py` — Synthetic sprint data generator (for testing/demo/validation)
 - `summarize_sims.py` — Simulation results summary (percentile analysis)
+
+### Validation & Research:
+- `run_validation_experiments.py` — Multi-configuration validation automation (see paper Section 5.6)
+- `compute_remaining_effort.py` — Helper utility for dataset parameterization
+- `validation_datasets/` — Synthetic datasets for robustness testing
+  - `VALIDATION_SUMMARY.md` — Executive summary of validation findings
+  - `*.csv` — Six configurations (small/medium/large × low/high volatility)
+- `paper.html` — Academic paper with validation study, generator justification, and deployment guidance
 
 ### Configuration:
 - `forecast_config.json` — Main config file (example)
@@ -326,6 +334,48 @@ Recommendation: for small data (e.g. n <= 12) use p90 for conservative planning.
   ```
 ---
 
+## Validation & Testing
+
+### Multi-Configuration Validation
+The project includes automated validation across diverse synthetic datasets to verify model robustness:
+
+**Run validation experiments:**
+```bash
+python3 run_validation_experiments.py
+```
+
+**What it does:**
+- Tests model on 6 different configurations (n=12-96 sprints, varying volatility)
+- Generates forecasts for each configuration (5000 MC simulations each)
+- Produces summary table with forecast precision metrics
+- Validates sample size effects, volatility impacts, and sprint length independence
+
+**Key findings (see `validation_datasets/VALIDATION_SUMMARY.md`):**
+- Forecast precision improves **70%** when moving from n=12 to n=24 sprints
+- Volatility (CV) is primary driver of forecast width (**49% increase** when CV doubles)
+- Model stable beyond n≥24 sprints (diminishing returns)
+- Sprint length (7-day vs 14-day) does not affect forecast quality
+
+**Validation datasets:**
+- `small_low_cv`: 12 sprints, low volatility (CV=0.088)
+- `small_high_cv`: 12 sprints, high volatility (CV=0.184)
+- `medium_mixed`: 24 sprints, mixed length
+- `large_stable`: 48 sprints, 14-day cadence
+- `large_volatile`: 48 sprints, mixed, volatile
+- `xlarge_realistic`: 96 sprints, realistic pattern
+
+### Synthetic Data Generator Validation
+The generator (`generate_dataset.py`) produces theory-driven synthetic data incorporating:
+- **AR(1) momentum** (ρ=0.45) for sprint-to-sprint correlation
+- **Seasonal variation** (26-sprint period) modeling organizational rhythms
+- **Team scaling effects** (Brooks' Law adjustment)
+- **Quality tax** (bug percentage impact)
+- **Stochastic noise** (σ=1.8 pd/day for unpredictable events)
+
+Generated data validated against empirical Agile literature (Vacanti 2015, Sutherland 2014, McConnell 2006). See **paper.html Section 5.7** for detailed justification.
+
+---
+
 ## Errors / Troubleshooting
 - Error: `CSV missing required columns` — check CSV headers (sprint_id,start_date,end_date,velocity,scope_added)
 - Error: finish_date falls on weekend — check `future_holiday_dates` or sprint start logic; `add_workdays` & weekend calculation is done automatically in script.
@@ -338,3 +388,5 @@ Recommendation: for small data (e.g. n <= 12) use p90 for conservative planning.
 - Enter `total_release_effort` in correct unit (must match config.effort_unit).
 - Use minimal CSV schema; let scripts calculate derived columns.
 - Prefer conservative p90 in small data situations.
+- **For production use:** Target n≥20-24 historical sprints for stable forecasts.
+- **High-volatility teams (CV>0.15):** Target n≥30 for comparable precision.

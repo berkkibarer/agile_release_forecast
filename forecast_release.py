@@ -143,6 +143,7 @@ def main():
         team_size_col = cem_cfg.get("team_size_col", "team_size")
         df = compute_effort_metrics(df, window=window, team_size_col=team_size_col)
         features_out = Path(cfg.get("history_path", "history/model_history.jsonl")).parent / "sprint_features.csv"
+        features_out.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(features_out, index=False)
         print(f"Wrote computed effort metrics to {features_out}")
 
@@ -350,6 +351,7 @@ def main():
 
     sims_df = pd.DataFrame(sims)
     sims_out = cfg.get("output_paths", {}).get("sims_csv", "sims_output_regression.csv")
+    Path(sims_out).parent.mkdir(parents=True, exist_ok=True)
     sims_df.to_csv(sims_out, index=False)
     print(f"Saved {len(sims_df)} sims to {sims_out}")
 
