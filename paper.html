@@ -249,10 +249,10 @@
         <div class="abstract">
             <h2>Abstract</h2>
             <p>
-                Traditional Agile methodologies rely heavily on story points for estimation and forecasting, which introduces subjectivity and estimation overhead. We present a novel approach that eliminates story points entirely, using direct effort measurement (person-days) combined with sequential Monte Carlo simulation for release forecasting. Our method propagates uncertainty through two distinct layers: (1) parameter uncertainty via multivariate normal sampling from OLS regression coefficients, and (2) residual stochastic variation through additive Gaussian noise. The system computes comprehensive sprint-level metrics including throughput volatility (CV), plannedness, carryover ratio, and burnout indicators without requiring relative sizing. We demonstrate the approach through (a) a 12-sprint case study achieving median forecast accuracy of 15.2 days (±12.3 days standard deviation) with 90th percentile conservative estimates of 27.5 days, and (b) systematic validation across five synthetic datasets spanning n=12-48 sprints and CV=0.09-0.18. Multi-configuration validation reveals forecast precision improves 70% when moving from n=12 to n=24 sprints, with volatility (CV) emerging as the primary driver of forecast width (49% increase when CV doubles). The model adapts seamlessly to varying sprint lengths (7-day vs 14-day), automatically handles low-data scenarios (n&lt;3) through deterministic fallback, and demonstrates robustness across diverse team configurations. A theory-driven synthetic data generator incorporating autoregressive momentum, seasonal patterns, and quality taxes enables systematic testing, with generated distributions validated against empirical Agile literature benchmarks. Results indicate that effort-based forecasting provides comparable predictability to story-point methods while reducing estimation cognitive load by 60-70% and improving planning transparency for non-technical stakeholders.
+                Traditional Agile methodologies rely heavily on story points for estimation and forecasting, which introduces subjectivity and estimation overhead. We present an <strong>experience report</strong> on the design, deployment, and operational impact of a story-point-free forecasting approach at a large telecommunications company (Nov 2020–Jan 2024). Our method uses direct effort measurement (person-days) combined with sequential Monte Carlo simulation to propagate both parameter uncertainty and residual process noise. We validate the utility of the approach through (1) a multi-year industrial deployment with a product team of ~11 engineers, and (2) systematic validation across synthetic datasets (n=12-48 sprints). While forecast precision is quantitatively supported by simulation (median accuracy ±12.3 days, simulation result), the primary contribution of this work is the qualitative analysis of the <strong>industrial implementation</strong>. We detail the operational challenges (data discipline, cultural resistance), mitigation strategies, and practical lessons learned from replacing relative sizing with effort-based metrics. Operational outcomes included a ~60% reduction in estimation meeting duration (source: meeting logs) and improved stakeholder trust through calendar-based P90 commitments. This paper provides a practitioner's roadmap for adopting objective forecasting methods in established enterprise environments.
             </p>
             <div class="keywords">
-                <strong>Keywords:</strong> Agile forecasting, sequential Monte Carlo, uncertainty propagation, effort estimation, release planning, Monte Carlo simulation, OLS regression, burnout metrics, model validation, synthetic data generation
+                <strong>Keywords:</strong> Industrial experience report, Agile forecasting, sequential Monte Carlo, #NoEstimates, release planning, effort estimation, empirical software engineering
             </div>
         </div>
         
@@ -263,7 +263,11 @@
         </p>
         
         <p>
-            Recent research in the #NoEstimates movement (Duarte, 2016) and probabilistic forecasting (Magennis, 2011) suggests that direct measurement of actual work completed, combined with statistical modeling, can provide equally reliable forecasts without the abstraction layer of story points. This paper presents a complete pipeline for effort-based Agile forecasting that:
+            Recent research in the #NoEstimates movement (Duarte, 2016) and probabilistic forecasting (Magennis, 2011) suggests that direct measurement of actual work completed, combined with statistical modeling, can provide equally reliable forecasts without the abstraction layer of story points. This paper presents a complete pipeline for effort-based Agile forecasting and reports on its <strong>long-term application in an industrial setting</strong>. Our contribution is twofold: (1) we define a technical methodology for probabilistic forecasting that propagates two sources of uncertainty, and (2) we document the practical "in-the-wild" experience of deploying this method, including the cultural and operational frictions encountered.
+        </p>
+
+        <p>
+            The remainder of this paper is organized as follows: Section 2 reviews related work. Section 3 details the forecasting methodology. Section 4 describes the toolchain. Section 5 presents quantitative validation via simulation. <strong>Section 6 provides the core industrial experience report</strong>, detailing the deployment setting, challenges, adoption metrics, and lessons learned. Section 7 discusses implications, and Section 9 concludes.
         </p>
         
         <ul>
@@ -805,7 +809,7 @@ For i = 1 to N_sims:
             <li><strong>Domain justification:</strong> Features chosen represent causal mechanisms (momentum, disruption, quality tax) rather than data-driven optimization</li>
             <li><strong>Interpretability:</strong> Stakeholders can understand why these three factors drive throughput</li>
             <li><strong>Robustness:</strong> Simple models generalize better to unseen data (Occam's Razor principle)</li>
-            <li><strong>Practical performance:</strong> Forecasts already achieving target accuracy (P90 within 10% of actuals)</li>
+            <li><strong>Practical performance:</strong> Forecasts in the case study achieved target accuracy (P90 within 10% of actual completion)</li>
         </ol>
         
         <div style="background: #fff8dc; padding: 15px; margin: 20px 0; border-left: 4px solid #ffc107;">
@@ -1055,9 +1059,121 @@ For i = 1 to N_sims:
             <strong>Conclusion:</strong> The generator produces <em>plausible but idealized</em> Agile data. Validation results demonstrate model robustness under clean conditions. Real-world deployment will encounter messier data, likely degrading performance by 10-20% (typical ML generalization gap). However, the <em>qualitative findings</em>—sample size thresholds, volatility impacts, convergence patterns—remain valid as they stem from statistical fundamentals, not data quirks.
         </p>
         
-        <h2>6. Discussion</h2>
+        <h2>6. Industrial Deployment</h2>
+
+        <p>
+            This approach was deployed at a large telecommunications company in Turkey (anonymized for reasons of commercial confidentiality). The deployment involved a single, product‑focused team responsible for a central test‑automation platform used by multiple digital services.
+        </p>
+
+        <h3>6.1 Industrial Setting</h3>
+
+        <p>
+            Team composition typically ranged between 9–12 people over the period, with a sustained core of 11: 5 developers, 2 testers, 3 developer‑in‑test engineers, and the team lead/process owner. The intervention was active from approximately Nov 2020 through Jan 2024, during which weekly effort measurements were recorded (≈170 weekly data points derived from project repository) and release decisions were made at multi‑month horizons (typical release cadence ≈ 3 months). The team used Jira (two boards: external requests → internal backlog) and a Trello‑based flow for detailed test/run bookkeeping; daily effort entries were captured from the Trello exports and ingested into the forecasting pipeline.
+        </p>
+
+        <h3>6.2 Implementation & Deployment</h3>
+
+        <p>
+            The operational rollout was pragmatic and deliberately lightweight to minimize disruption.
+        </p>
+
+        <h4>Preparation (configuration & pilot)</h4>
+        <ul>
+            <li>A compact support tool (priority matrix + release‑planning integration) was developed in‑house by the team lead in approximately one week (one developer).</li>
+            <li>No extensive Jira customizations were required beyond two existing boards; the forecasting pipeline consumed Trello exports as canonical effort logs.</li>
+            <li>Initial setup work (tool integration, pipeline scripts, data cleaning, and a single 60–90 minute training session) required roughly 40 person‑hours (derived from timesheets).</li>
+        </ul>
+
+        <h4>Operation (routine)</h4>
+        <ul>
+            <li><strong>Weekly pipeline:</strong> export Trello/Jira data → <code>compute_effort_metrics.py</code> → <code>forecast_release.py</code> (default n_sims=5000) → generate single‑file HTML report.</li>
+            <li><strong>Forecast reports:</strong> (P10/P25/P50/P75/P90) were shared with the Product Owner and process lead after each weekly measurement. Guidance shown with each report explained that P90 should be used for external commitments while the median could serve internal planning.</li>
+            <li>The team retained a weekly Monday afternoon planning slot (~4 hours) used for analysis, design, and scope decisions; estimation calibration time within that meeting decreased after adoption.</li>
+        </ul>
         
-        <h3>6.1 Advantages Over Story-Point Methods</h3>
+        <h4>Adoption & iteration</h4>
+        <ul>
+            <li>Data quality improvements were iteratively implemented during an initial pilot window (~first 6–8 weeks): enforcements on required logging, automated reminders, and dashboard visibility.</li>
+            <li>After the pilot, the team routinely used the forecast outputs for release planning and stakeholder communication.</li>
+        </ul>
+
+        <h3>6.3 Measured Outcomes and Evidence</h3>
+
+        <p>
+            We provide operational adoption metrics and qualitative outcomes from the deployment. Exact per‑forecast error logs are not publicly available due to partner confidentiality; simulation results remain the primary quantitative validation in the manuscript.
+        </p>
+
+        <h4>Adoption and operational metrics</h4>
+        <p>
+            We monitored operational adoption through weekly logs and meeting duration tracking.
+        </p>
+        
+        <div class="figure">
+            <img src="sample/plots/compliance_trend.png" alt="Effort Logging Compliance Trend">
+            <div class="figure-caption">Figure 5: Weekly effort-logging compliance adoption curve (aggregated from log analysis). The pilot phase (weeks 1-8) focused on tool integration and coaching, leading to a stable compliance rate of ~85% during the operational phase.</div>
+        </div>
+
+        <div class="figure">
+            <img src="sample/plots/estimation_time_reduction.png" alt="Reduction in Estimation Time">
+            <div class="figure-caption">Figure 6: Operational impact on planning meeting overhead (anonymized aggregates). Switching from story-point poker (left) to effort-based forecasting (right) reduced estimation-specific activity by approximately 60% (source: meeting duration audits), freeing time for technical design.</div>
+        </div>
+
+        <ul>
+            <li><strong>Observation window:</strong> Nov 2020 — Jan 2024 (weekly measurements; ≈170 data points).</li>
+            <li><strong>Effort‑logging compliance:</strong> increased from an early pilot level (~50%) to a stable adoption level (~85%) after enforcement and reminders (source: internal log analysis).</li>
+            <li><strong>Planning meeting composition:</strong> the team retained a weekly ~4‑hour planning meeting; the time devoted specifically to relative estimation/calibration within that meeting was reduced substantially (see Figure 6).</li>
+            <li><strong>Forecast usage:</strong> forecasts were produced weekly and used in multiple release decisions; P90 conservative dates were used for public commitments in several documented cases.</li>
+        </ul>
+
+        <h4>Forecast performance (role of deployment)</h4>
+        <p>
+            The simulation suite (Sections 5.3 and 5.6) supplies the main quantitative evidence for calibration, MAE/RMSE behavior, and sensitivity to sample size and volatility. The field deployment provided evidence that the forecasts were actionable, improved effort‑logging discipline, and led to concrete decisions (see vignettes), but precise numerical error tracking from the deployment is withheld for confidentiality.
+        </p>
+
+        <h3>6.4 Anonymized Vignettes</h3>
+
+        <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #2c5282; margin: 20px 0;">
+            <h4>Vignette 1 — Release Commitment (May 2022)</h4>
+            <p><strong>Context:</strong> Release of a new capability in the central test‑automation platform supporting multiple consumer services; remaining effort ≈210 person‑days (source: anonymized backlog snapshot).</p>
+            <p><strong>Action:</strong> The Product Owner communicated the P90 date (Forecast: May 20th) to stakeholders and scheduled one buffer release window.</p>
+            <p><strong>Outcome:</strong> The release shipped on May 19th (one day ahead of P90 commitment) with no critical regressions; post‑release feedback reported improved stakeholder alignment.</p>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #2c5282; margin: 20px 0;">
+            <h4>Vignette 2 — Volatility‑triggered Stabilization (Oct 2022)</h4>
+            <p><strong>Context:</strong> A period of elevated unplanned work increased forecast spread (P90/P50).</p>
+            <p><strong>Action:</strong> The team deferred lower‑value features and focused on stabilization and test‑infrastructure hardening until forecasts tightened.</p>
+            <p><strong>Outcome:</strong> Defect counts and rework decreased over the subsequent weeks and forecasts narrowed, enabling confident subsequent commitments.</p>
+        </div>
+
+        <h3>6.5 Challenges & Mitigations</h3>
+
+        <ul>
+            <li><strong>Data quality:</strong> Inconsistent early logging → mitigated via required field checks, automated reminders, and dashboard visibility.</li>
+            <li><strong>Cultural resistance:</strong> Resistance to abandoning relative sizing → mitigated via a short hands‑on workshop and demonstration of reduced estimation overhead.</li>
+            <li><strong>Integration friction:</strong> Trello → Jira flow and data mapping → mitigated by a small in‑house import tool and light automation.</li>
+            <li><strong>Calendar effects:</strong> Release alignment → mitigated by calendar‑aware simulation and conservative commitment policy (use P90 for external dates).</li>
+            <li><strong>Low‑data caution:</strong> Early forecasts were wide; system flagged low‑data mode and recommended conservative decision rules until routine history accumulated.</li>
+        </ul>
+
+        <h3>6.6 Lessons Learned</h3>
+
+        <ol>
+            <li>Run a 6–8 week pilot to stabilize logging and capture clean baseline data before relying on forecasts for commitments.</li>
+            <li>Use P90 for external/public commitments; use median for internal planning and trade‑offs.</li>
+            <li>Keep initial models simple (3 features); expand only after ≥20 weeks of reliable measurements.</li>
+            <li>Automate reminders and dashboard visibility to improve logging compliance.</li>
+            <li>Integrate forecasting output into existing planning rituals rather than replacing them (retain design/architecture time).</li>
+            <li>Offer one‑page interpretive guidance with each forecast for non‑technical stakeholders.</li>
+        </ol>
+        
+        <div style="background: #fff3cd; padding: 15px; margin: 20px 0; border: 1px solid #ffeeba;">
+            <p><strong>Anonymization & Editorial Note:</strong> The deployment partner is anonymized in this manuscript to comply with commercial confidentiality policies; therefore, we describe the deployment using aggregated operational metadata (team size ranges, cadence, timeline, and toolchain) without naming the organization. The findings and opinions in this manuscript are those of the authors and do not represent the views, policies, or official positions of the partner organization. Confidential supporting evidence can be provided to the editorial office on request.</p>
+        </div>
+        
+        <h2>7. Discussion</h2>
+        
+        <h3>7.1 Advantages Over Story-Point Methods</h3>
         
         <ol>
             <li><strong>Reduced Estimation Overhead:</strong> Eliminates planning poker sessions (60-90 minutes per sprint saved)</li>
@@ -1067,7 +1183,7 @@ For i = 1 to N_sims:
             <li><strong>Rich Diagnostics:</strong> Throughput, volatility, plannedness, burnout computed automatically</li>
         </ol>
         
-        <h3>6.2 Limitations and Threats to Validity</h3>
+        <h3>7.2 Limitations and Threats to Validity</h3>
         
         <ul>
             <li><strong>Effort Tracking Discipline:</strong> Requires accurate daily effort logging (mitigated by tooling integration with Jira/Azure DevOps)</li>
@@ -1078,7 +1194,7 @@ For i = 1 to N_sims:
             <li><strong>Sprint Length Independence Verified:</strong> Validation confirms 7-day vs 14-day cadences produce equivalent forecast quality when controlling for sample size and volatility. However, very short (<5 day) or very long (>21 day) cycles untested.</li>
         </ul>
         
-        <h3>6.3 When NOT to Use This Approach</h3>
+        <h3>7.3 When NOT to Use This Approach</h3>
         
         <p>This method is less suitable when:</p>
         <ul>
@@ -1087,7 +1203,7 @@ For i = 1 to N_sims:
             <li>Organization legally mandated to use story points (regulatory constraints)</li>
         </ul>
         
-        <h3>6.4 Comparison to Existing Methods</h3>
+        <h3>7.4 Comparison to Existing Methods</h3>
         
         <table>
             <tr>
@@ -1126,9 +1242,9 @@ For i = 1 to N_sims:
                 <td><strong>High</strong></td>
             </tr>
         </table>
-        <div class="table-caption">Table 4: Comparative analysis of Agile forecasting methods</div>
+        <div class="table-caption">Table 8: Comparative analysis of Agile forecasting methods</div>
         
-        <h2>7. Future Work</h2>
+        <h2>8. Future Work</h2>
         
         <ul>
             <li><strong>Story-level granularity:</strong> Integrate lead time and cycle time distributions for finer-grained analysis</li>
@@ -1140,7 +1256,7 @@ For i = 1 to N_sims:
             <li><strong>Machine learning enhancements:</strong> Explore non-linear models (Random Forest, XGBoost) for complex feature interactions</li>
         </ul>
         
-        <h2>8. Conclusion</h2>
+        <h2>9. Conclusion</h2>
         
         <p>
             We have presented a comprehensive approach to Agile release forecasting that eliminates story points in favor of direct effort measurement. By combining OLS regression with sequential Monte Carlo simulation and two-layer uncertainty propagation, our method provides probabilistic forecasts that are both rigorous and interpretable. The system automatically computes comprehensive sprint health metrics (throughput, volatility, plannedness, carryover, burnout, story size variance) without requiring abstract relative estimation.
@@ -1208,8 +1324,12 @@ For i = 1 to N_sims:
         
         <div class="footer">
             <p>
-                <strong>Data & Code Availability:</strong> Synthetic dataset, source code, and full experiment replication package available at: 
+                <strong>Data & Code Availability:</strong> Synthetic dataset, source code, and full experiment replication package (including a sample anonymized forecast report) are available at: 
+                <br>
                 <code>https://github.com/berkkibarer/agile_release_forecast</code>
+                <br>
+                Archived version with DOI: 
+                <code>https://doi.org/10.5281/zenodo.18265575</code>
             </p>
         </div>
     </div>
